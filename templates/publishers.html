@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="toolbar">
+    <form method="get" action="/publishers" class="search-box">
+        <input type="text" name="q" value="{{ q }}" placeholder="搜索出版社名称...">
+        <button type="submit" class="btn btn-primary">搜索</button>
+    </form>
+    <button class="btn btn-primary" onclick="openModal('addModal')">+ 添加出版社</button>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>出版社名称</th>
+            <th width="150">操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.name }}</td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="openEditModal({{ item.id }}, '{{ item.name }}')">编辑</button>
+                <form method="post" action="/publishers/delete/{{ item.id }}" style="display:inline;" onsubmit="return confirm('确定要删除吗？该出版社名下的书也会被删除！');">
+                    <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        {% if not items %}<tr><td colspan="3" style="text-align: center;">暂无数据</td></tr>{% endif %}
+    </tbody>
+</table>
+
+<div class="pagination">
+    {% for p in range(1, total_pages + 1) %}
+        <a href="/publishers?page={{ p }}&q={{ q }}" class="{% if p == page %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
+</div>
+
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <h3>添加出版社</h3>
+        <form method="post" action="/publishers/add">
+            <div class="form-group">
+                <label>名称</label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('addModal')">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h3>编辑出版社</h3>
+        <form id="editForm" method="post" action="">
+            <div class="form-group">
+                <label>名称</label>
+                <input type="text" name="name" id="editName" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('editModal')">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(id, name) {
+        document.getElementById('editForm').action = "/publishers/edit/" + id;
+        document.getElementById('editName').value = name;
+        openModal('editModal');
+    }
+</script>
+{% endblock %}

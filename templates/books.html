@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="toolbar">
+    <form method="get" action="/books" class="search-box">
+        <input type="text" name="q" value="{{ q }}" placeholder="搜索图书名称...">
+        <button type="submit" class="btn btn-primary">搜索</button>
+    </form>
+    <button class="btn btn-primary" onclick="openModal('addModal')">+ 添加图书</button>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>图书名称</th>
+            <th>所属出版社</th>
+            <th>作者 (多选)</th>
+            <th width="150">操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.publisher.name if item.publisher else '未分配' }}</td>
+            <td>
+                {% for author in item.authors %}
+                    <span style="background: #e1f5fe; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; color: #0288d1; margin-right: 4px;">{{ author.name }}</span>
+                {% endfor %}
+            </td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="openEditModal({{ item.id }}, '{{ item.name }}', '{{ item.publisher_id }}', {{ item.authors|map(attribute='id')|list|tojson }})">编辑</button>
+                <form method="post" action="/books/delete/{{ item.id }}" style="display:inline;" onsubmit="return confirm('确定要删除吗？');">
+                    <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        {% if not items %}<tr><td colspan="5" style="text-align: center;">暂无数据</td></tr>{% endif %}
+    </tbody>
+</table>
+
+<div class="pagination">
+    {% for p in range(1, total_pages + 1) %}
+        <a href="/books?page={{ p }}&q={{ q }}" class="{% if p == page %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
+</div>
+
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <h3>添加图书</h3>
+        <form method="post" action="/books/add">
+            <div class="form-group">
+                <label>图书名称</label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="form-group">
+                <label>出版社 (一对多)</label>
+                <select name="publisher_id" required>
+                    <option value="">请选择出版社</option>
+                    {% for pub in publishers %}
+                    <option value="{{ pub.id }}">{{ pub.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>作者 (多对多, 按住 Ctrl/Cmd 多选)</label>
+                <select name="author_ids" multiple class="multi-select">
+                    {% for author in authors %}
+                    <option value="{{ author.id }}">{{ author.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('addModal')">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h3>编辑图书</h3>
+        <form id="editForm" method="post" action="">
+            <div class="form-group">
+                <label>图书名称</label>
+                <input type="text" name="name" id="editName" required>
+            </div>
+            <div class="form-group">
+                <label>出版社</label>
+                <select name="publisher_id" id="editPublisher" required>
+                    <option value="">请选择出版社</option>
+                    {% for pub in publishers %}
+                    <option value="{{ pub.id }}">{{ pub.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>作者 (多选)</label>
+                <select name="author_ids" id="editAuthors" multiple class="multi-select">
+                    {% for author in authors %}
+                    <option value="{{ author.id }}">{{ author.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('editModal')">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(id, name, publisher_id, author_ids) {
+        document.getElementById('editForm').action = "/books/edit/" + id;
+        document.getElementById('editName').value = name;
+        document.getElementById('editPublisher').value = publisher_id;
+        
+        // 处理多选框的回显
+        const authorSelect = document.getElementById('editAuthors');
+        Array.from(authorSelect.options).forEach(option => {
+            if (author_ids.includes(parseInt(option.value))) {
+                option.selected = true;
+            } else {
+                option.selected = false;
+            }
+        });
+        
+        openModal('editModal');
+    }
+</script>
+{% endblock %}
